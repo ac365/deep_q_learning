@@ -13,8 +13,8 @@ class Agent:
         self.epsDecay  = EPS_DECAY
         self.batchSize = BATCH_SIZE
 
-        self.policyNet = DQN()
-        self.targetNet = DQN()
+        self.policyNet = DQN() #FIXME: missing init inputs
+        self.targetNet = DQN() #FIXME: missing init inputs
         self.memory    = Memory(MEM_CAPACITY)
         
     def act():
