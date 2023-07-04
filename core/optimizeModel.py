@@ -1,2 +1,2 @@
-def OptimizeModel():
+def optimizeModel():
     pass

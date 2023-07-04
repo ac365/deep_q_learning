@@ -11,10 +11,10 @@ class Memory:
     def __len__(self): #TODO: delete if unused
         return len(self.memory)
     
-    def push(self, data):
-        self.index = self.index % self.capacity
+    def push(self, data) -> None:
+        self.index              = self.index % self.capacity
         self.memory[self.index] = data
-        self.index += 1
+        self.index             += 1
    
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)
