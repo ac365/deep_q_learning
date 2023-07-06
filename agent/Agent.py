@@ -2,20 +2,48 @@ import Memory
 import networks.DQN as DQN
 
 class Agent:
-    def __init__(self,BATCH_SIZE=128,GAMMA=.99,EPS_START=0.9, 
-                 EPS_END=0.05,EPS_DECAY=1000,TAU=0.005,LR=1e-4,
-                 MEM_CAPACITY=100000) -> None:
-        self.lr        = LR
-        self.tau       = TAU
-        self.gamma     = GAMMA
-        self.epsEnd    = EPS_END
-        self.epsStart  = EPS_START
-        self.epsDecay  = EPS_DECAY
-        self.batchSize = BATCH_SIZE
+    #FIXME: should be done with **kwargs
+    def __init__(self, obsDims, **hyperparams) -> None:
+        if "LR" in hyperparams.keys():
+            self.lr = hyperparams["LR"]
+        else:
+            self.lr = 1e-4
+        if "TAU" in hyperparams.keys():
+            self.tau = hyperparams["TAU"]
+        else:
+            self.tau = 0.005
+        if "GAMMA" in hyperparams.keys():
+            self.gamma = hyperparams["GAMMA"]
+        else:
+            self.gamma = 0.99
+        if "EPS_END" in hyperparams.keys():
+            self.epsEnd = hyperparams["EPS_END"]
+        else:
+            self.epsEnd = 0.05
+        if "EPS_START" in hyperparams.keys():
+            self.epsStart = hyperparams["EPS_START"]
+        else:
+            self.epsStart = 0.9
+        if "EPS_DECAY" in hyperparams.keys():
+            self.epsDecay = hyperparams["EPS_DECAY"]
+        else:
+            self.epsDecay = 1000
+        if "BATCH_SIZE" in hyperparams.keys():
+            self.batchSize = hyperparams["BATCH_SIZE"]
+        else:
+            self.batchSize = 128
+        
+        if "MEM_CAPACITY" in hyperparams.keys():
+            self.stateMem  = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
+            self.rewardMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
+            self.actionMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
+        else:
+            self.stateMem  = Memory(100000,*obsDims)
+            self.rewardMem = Memory(100000,*obsDims) 
+            self.actionmem = Memory(100000,*obsDims) 
 
         self.policyNet = DQN() #FIXME: missing init inputs
         self.targetNet = DQN() #FIXME: missing init inputs
-        self.memory    = Memory(MEM_CAPACITY)
-        
+
     def act():
         pass
