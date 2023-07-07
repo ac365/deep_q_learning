@@ -2,8 +2,7 @@ import Memory
 import networks.DQN as DQN
 
 class Agent:
-    #FIXME: should be done with **kwargs
-    def __init__(self, obsDims, **hyperparams) -> None:
+    def __init__(self, obsDims:list, actDims:list, **hyperparams:dict):
         if "LR" in hyperparams.keys():
             self.lr = hyperparams["LR"]
         else:
@@ -39,11 +38,11 @@ class Agent:
             self.actionMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
         else:
             self.stateMem  = Memory(100000,*obsDims)
-            self.rewardMem = Memory(100000,*obsDims) 
-            self.actionmem = Memory(100000,*obsDims) 
+            self.rewardMem = Memory(100000) 
+            self.actionMem = Memory(100000,*actDims) 
 
-        self.policyNet = DQN() #FIXME: missing init inputs
-        self.targetNet = DQN() #FIXME: missing init inputs
+        self.policyNet = DQN(obsDims,actDims)
+        self.targetNet = DQN(obsDims,actDims)
 
     def act():
         pass
