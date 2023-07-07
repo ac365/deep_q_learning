@@ -1,6 +1,5 @@
-import Memory
 import networks.DQN as DQN
-
+import agent.Memory as Memory
 class Agent:
     def __init__(self, obsDims:list, actDims:list, **hyperparams:dict):
         if "LR" in hyperparams.keys():
