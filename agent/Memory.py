@@ -3,12 +3,12 @@ import numpy as np
 
 
 class Memory:
-    def __init__(self, capacity, *inpDims) -> None:
+    def __init__(self, capacity, *inpDims:tuple) -> None:
         self.index    = 0
         self.capacity = capacity
         self.memory   = np.zeros([capacity, *inpDims], dtype=np.float32)
     
-    def __len__(self): #TODO: delete if unused
+    def __len__(self) -> int: #TODO: delete if unused
         return len(self.memory)
     
     def push(self, data) -> None:
