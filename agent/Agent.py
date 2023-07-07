@@ -43,5 +43,5 @@ class Agent:
         self.policyNet = DQN(obsDims,actDims)
         self.targetNet = DQN(obsDims,actDims)
 
-    def act():
+    def act(self):
         pass
