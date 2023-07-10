@@ -1,7 +1,30 @@
 from networks.DQN import DQN
 from agent.Memory import Memory
+
+import math
+import random
+import torch as T
+import torch.optim as optim
 class Agent:
     def __init__(self, obsDims:list, actDims:list, **hyperparams:dict):
+        self._steps = 0
+
+        self.device    = T.device("mps" if T.backends.mps.is_available()
+                                   else "cpu")
+        self.policyNet = DQN(obsDims,actDims).to(self.device)
+        self.targetNet = DQN(obsDims,actDims).to(self.device)
+        self.optimizer = optim.AdamW(self.policyNet.parameters(),
+                                     lr = self.lr, amsgrad=True)
+
+        if "MEM_CAPACITY" in hyperparams.keys():
+            self.stateMem  = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
+            self.rewardMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
+            self.actionMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
+        else:
+            self.stateMem  = Memory(100000,*obsDims)
+            self.rewardMem = Memory(100000) 
+            self.actionMem = Memory(100000,*actDims) 
+
         if "LR" in hyperparams.keys():
             self.lr = hyperparams["LR"]
         else:
@@ -30,18 +53,15 @@ class Agent:
             self.batchSize = hyperparams["BATCH_SIZE"]
         else:
             self.batchSize = 128
-        
-        if "MEM_CAPACITY" in hyperparams.keys():
-            self.stateMem  = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
-            self.rewardMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
-            self.actionMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
+
+    def act(self, observation):
+        self.epsilon = self.epsEnd + (self.epsStart - self.epsEnd)*\
+            math.exp(-1. * self._steps / self.epsDecay)
+        self.steps += 1
+
+        if random.random() > self.epsilon:
+            state = T.tensor([observation]).to(self.device)
+            action = self.policyNet.forward(state)
         else:
-            self.stateMem  = Memory(100000,*obsDims)
-            self.rewardMem = Memory(100000) 
-            self.actionMem = Memory(100000,*actDims) 
-
-        self.policyNet = DQN(obsDims,actDims)
-        self.targetNet = DQN(obsDims,actDims)
-
-    def act(self):
-        pass
+            pass
+        return action
