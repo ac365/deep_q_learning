@@ -1,21 +1,24 @@
-from networks.DQN import DQN
+from networks.DQN import DQN 
 from agent.Memory import Memory
+import gymnasium as gym #FIXME? is this really the best way to do this?
+
 
 import math
 import random
+import numpy as np
 import torch as T
 import torch.optim as optim
+
 class Agent:
-    def __init__(self, obsDims:list, actDims:list, **hyperparams:dict):
-        self._steps = 0
-
-        self.device    = T.device("mps" if T.backends.mps.is_available()
+    def __init__(self, env:gym.Env, obsDims:list, actDims:list,
+                  **hyperparams:dict):
+        #member variables
+        self._env    = env
+        self._steps  = 0
+        self._device = T.device("mps" if T.backends.mps.is_available()
                                    else "cpu")
-        self.policyNet = DQN(obsDims,actDims).to(self.device)
-        self.targetNet = DQN(obsDims,actDims).to(self.device)
-        self.optimizer = optim.AdamW(self.policyNet.parameters(),
-                                     lr = self.lr, amsgrad=True)
 
+        #kwargs
         if "MEM_CAPACITY" in hyperparams.keys():
             self.stateMem  = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
             self.rewardMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
@@ -54,14 +57,25 @@ class Agent:
         else:
             self.batchSize = 128
 
-    def act(self, observation):
+        #networks
+        self.policyNet = DQN(obsDims,actDims).to(self._device)
+        self.targetNet = DQN(obsDims,actDims).to(self._device)
+        self.optimizer = optim.AdamW(self.policyNet.parameters(),
+                                     lr = self.lr, amsgrad=True)
+
+    
+    def act(self, observation:np.ndarray) -> T.Tensor:
         self.epsilon = self.epsEnd + (self.epsStart - self.epsEnd)*\
             math.exp(-1. * self._steps / self.epsDecay)
-        self.steps += 1
+        self._steps += 1
 
         if random.random() > self.epsilon:
-            state = T.tensor([observation]).to(self.device)
+            state  = T.tensor([observation]).to(self.device)
             action = self.policyNet.forward(state)
         else:
-            pass
+            action = T.tensor(self._env.action_space.sample())
         return action
+    
+    
+    def learn(self):
+        pass
