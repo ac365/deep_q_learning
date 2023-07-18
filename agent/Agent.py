@@ -1,7 +1,6 @@
-from networks.DQN import DQN 
-from agent.Memory import Memory
+from networks.DQN import DQN as dqn
+from agent.Memory import Memory as mem
 import gymnasium as gym #FIXME? is this really the best way to do this?
-
 
 import math
 import random
@@ -20,13 +19,25 @@ class Agent:
 
         #kwargs
         if "MEM_CAPACITY" in hyperparams.keys():
-            self.stateMem  = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
-            self.rewardMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
-            self.actionMem = Memory(hyperparams["MEM_CAPACITY"],*obsDims)
+            self.stateMem     = mem(hyperparams["MEM_CAPACITY"],*obsDims,
+                                    dtype=np.float32)
+            self.nextStateMem = mem(hyperparams["MEM_CAPACITY"],*obsDims,
+                                    dtype=np.float32)
+            self.actionMem    = mem(hyperparams["MEM_CAPACITY"],*actDims,
+                                    dtype=np.int32)
+            self.rewardMem    = mem(hyperparams["MEM_CAPACITY"],
+                                    dtype=np.float32)
+            self.doneMem      = mem(hyperparams["MEM_CAPACITY"],
+                                    dtype=np.bool_)
         else:
-            self.stateMem  = Memory(100000,*obsDims)
-            self.rewardMem = Memory(100000) 
-            self.actionMem = Memory(100000,*actDims) 
+            self.stateMem     = mem(100000,*obsDims,*obsDims,
+                                    dtype=np.float32)
+            self.nextStateMem = mem(100000,*obsDims,*obsDims,
+                                    dtype=np.float32)
+            self.actionMem    = mem(100000,*actDims,*actDims,
+                                    dtype=np.int32) 
+            self.rewardMem    = mem(100000,dtype=np.float32) 
+            self.doneMem      = mem(100000,dtype=np.bool_)
 
         if "LR" in hyperparams.keys():
             self.lr = hyperparams["LR"]
@@ -58,12 +69,11 @@ class Agent:
             self.batchSize = 128
 
         #networks
-        self.policyNet = DQN(obsDims,actDims).to(self._device)
-        self.targetNet = DQN(obsDims,actDims).to(self._device)
+        self.policyNet = dqn(obsDims,actDims).to(self._device)
+        self.targetNet = dqn(obsDims,actDims).to(self._device)
         self.optimizer = optim.AdamW(self.policyNet.parameters(),
                                      lr = self.lr, amsgrad=True)
 
-    
     def act(self, observation:np.ndarray) -> T.Tensor:
         self.epsilon = self.epsEnd + (self.epsStart - self.epsEnd)*\
             math.exp(-1. * self._steps / self.epsDecay)
@@ -76,6 +86,13 @@ class Agent:
             action = T.tensor(self._env.action_space.sample())
         return action
     
+    def memorize(self, state:np.ndarray, action:np.ndarray, 
+                 reward:np.float32, nextState:np.ndarray, done:np.bool_):
+        self.stateMem.push(state)
+        self.nextStateMem.push(nextState)
+        self.actionMem.push(action)
+        self.rewardMem.push(reward)
+        self.doneMem.push(done)
     
     def learn(self):
         pass
