@@ -1,9 +1,10 @@
 import random
 import numpy as np
+from typing import Type
 
 
 class Memory:
-    def __init__(self, capacity, *inpDims:tuple) -> None:
+    def __init__(self, capacity, *inpDims:tuple, dtype:Type) -> None:
         self.index    = 0
         self.capacity = capacity
         self.memory   = np.zeros([capacity, *inpDims], dtype=np.float32)

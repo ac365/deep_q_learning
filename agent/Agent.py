@@ -20,22 +20,19 @@ class Agent:
         #kwargs
         if "MEM_CAPACITY" in hyperparams.keys():
             self.stateMem     = mem(hyperparams["MEM_CAPACITY"],*obsDims,
-                                    dtype=np.float32)
+                                    np.float32)
             self.nextStateMem = mem(hyperparams["MEM_CAPACITY"],*obsDims,
-                                    dtype=np.float32)
+                                    np.float32)
             self.actionMem    = mem(hyperparams["MEM_CAPACITY"],*actDims,
-                                    dtype=np.int32)
+                                    np.int32)
             self.rewardMem    = mem(hyperparams["MEM_CAPACITY"],
-                                    dtype=np.float32)
+                                    np.float32)
             self.doneMem      = mem(hyperparams["MEM_CAPACITY"],
-                                    dtype=np.bool_)
+                                    np.bool_)
         else:
-            self.stateMem     = mem(100000,*obsDims,*obsDims,
-                                    dtype=np.float32)
-            self.nextStateMem = mem(100000,*obsDims,*obsDims,
-                                    dtype=np.float32)
-            self.actionMem    = mem(100000,*actDims,*actDims,
-                                    dtype=np.int32) 
+            self.stateMem     = mem(100000,*obsDims,*obsDims,np.float32)
+            self.nextStateMem = mem(100000,*obsDims,*obsDims,np.float32)
+            self.actionMem    = mem(100000,*actDims,*actDims,np.int32) 
             self.rewardMem    = mem(100000,dtype=np.float32) 
             self.doneMem      = mem(100000,dtype=np.bool_)
 
