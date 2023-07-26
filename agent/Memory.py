@@ -18,5 +18,6 @@ class Memory:
         self.index             += 1
    
     def sample(self, batch_size:int):
-        return np.random.choice(self.memory, batch_size)
+        indices = np.random.choice(self.index, batch_size, replace=False)
+        return self.memory[indices]
     
