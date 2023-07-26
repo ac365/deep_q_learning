@@ -10,7 +10,6 @@ class DQN(nn.Module):
         self.layer3 = nn.Linear(128, *actDims)
 
     def forward(self, observation:T.Tensor) -> T.Tensor:
-        action = F.relu(self.layer1(observation))
-        action = F.relu(self.layer2(action))
-        action = self.layer3(action)
-        return action
+        x = F.relu(self.layer1(observation))
+        x = F.relu(self.layer2(x))
+        return self.layer3(x)
