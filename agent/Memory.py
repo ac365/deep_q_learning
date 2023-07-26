@@ -4,7 +4,7 @@ from typing import Type
 
 
 class Memory:
-    def __init__(self, capacity, *inpDims:tuple, dtype:Type) -> None:
+    def __init__(self, capacity:int, *inpDims:tuple, dtype:Type) -> None:
         self.index    = 0
         self.capacity = capacity
         self.memory   = np.zeros([capacity, *inpDims], dtype=np.float32)
