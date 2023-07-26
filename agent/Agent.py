@@ -95,4 +95,6 @@ class Agent:
         self.doneMem.push(done)
     
     def learn(self):
-        pass
+        if self.stateMem.index >= self.batchSize:
+            memSize = min(self.stateMem.index, self.stateMem.capacity)
+            pass
