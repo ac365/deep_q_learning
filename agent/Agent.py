@@ -38,7 +38,6 @@ class Agent:
                                     dtype=np.int32) 
             self.rewardMem    = mem(100000,dtype=np.float32) 
             self.doneMem      = mem(100000,dtype=np.bool_)
-
         if "LR" in hyperparams.keys():
             self.lr = hyperparams["LR"]
         else:
@@ -96,5 +95,17 @@ class Agent:
     
     def learn(self):
         if self.stateMem.index >= self.batchSize:
-            memSize = min(self.stateMem.index, self.stateMem.capacity)
+            stateBatch     = self.stateMem.sample(self.batchSize)
+            nextStateBatch = self.nextStateMem.sample(self.batchSize)
+            actionBatch    = self.actionMem.sample(self.batchSize)
+            rewardBatch    = self.rewardMem.sample(self.batchSize)
+            doneBatch      = self.doneMem.sample(self.batchSize)
+            
+            T.Tensor(stateBatch).to(self._device)
+            T.Tensor(nextStateBatch).to(self._device)
+            T.Tensor(rewardBatch).to(self._device)            
+            T.Tensor(doneBatch).to(self._device)
+
+            #TODO: call to policy and target networks
+            action_ = self.policyNet.forward(stateBatch)
             pass
