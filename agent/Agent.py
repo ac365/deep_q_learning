@@ -6,6 +6,7 @@ import math
 import random
 import numpy as np
 import torch as T
+import torch.nn as nn
 import torch.optim as optim
 
 class Agent:
@@ -19,25 +20,22 @@ class Agent:
 
         #kwargs
         if "MEM_CAPACITY" in hyperparams.keys():
-            self.stateMem     = mem(hyperparams["MEM_CAPACITY"],*obsDims,
-                                    dtype=np.float32)
-            self.nextStateMem = mem(hyperparams["MEM_CAPACITY"],*obsDims,
-                                    dtype=np.float32)
-            self.actionMem    = mem(hyperparams["MEM_CAPACITY"],*actDims,
-                                    dtype=np.int32)
+            self.stateMem     = mem(hyperparams["MEM_CAPACITY"],
+                                    dtype=np.float32, *obsDims)
+            self.nextStateMem = mem(hyperparams["MEM_CAPACITY"],
+                                    dtype=np.float32, *obsDims)
+            self.actionMem    = mem(hyperparams["MEM_CAPACITY"],
+                                    dtype=np.int32, *actDims)
             self.rewardMem    = mem(hyperparams["MEM_CAPACITY"],
                                     dtype=np.float32)
             self.doneMem      = mem(hyperparams["MEM_CAPACITY"],
                                     dtype=np.bool_)
         else:
-            self.stateMem     = mem(100000,*obsDims,*obsDims,
-                                    dtype=np.float32)
-            self.nextStateMem = mem(100000,*obsDims,*obsDims,
-                                    dtype=np.float32)
-            self.actionMem    = mem(100000,*actDims,*actDims,
-                                    dtype=np.int32) 
-            self.rewardMem    = mem(100000,dtype=np.float32) 
-            self.doneMem      = mem(100000,dtype=np.bool_)
+            self.stateMem     = mem(100000, dtype=np.float32, *obsDims)
+            self.nextStateMem = mem(100000, dtype=np.float32, *obsDims)
+            self.actionMem    = mem(100000, dtype=np.int32, *actDims) 
+            self.rewardMem    = mem(100000, dtype=np.float32) 
+            self.doneMem      = mem(100000, dtype=np.bool_)
         if "LR" in hyperparams.keys():
             self.lr = hyperparams["LR"]
         else:
@@ -95,6 +93,9 @@ class Agent:
     
     def learn(self):
         if self.stateMem.index >= self.batchSize:
+            #FIXME: sample() method rng seeds not synced
+            #pass Generator instance as input to sample()
+            #https://numpy.org/doc/stable/reference/random/generator.html#
             stateBatch     = self.stateMem.sample(self.batchSize)
             nextStateBatch = self.nextStateMem.sample(self.batchSize)
             actionBatch    = self.actionMem.sample(self.batchSize)
@@ -108,4 +109,9 @@ class Agent:
 
             #TODO: call to policy and target networks
             action_ = self.policyNet.forward(stateBatch)
-            pass
+            values_ = self.targetNet.forward(nextStateBatch)
+            values_[doneBatch] = 0.0
+            reward_ = values_.max(1)[0] * self.gamma + rewardBatch
+
+            criterion = nn.SmoothL1Loss()
+            loss = criterion(action_, reward_)
