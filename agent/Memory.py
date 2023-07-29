@@ -4,10 +4,10 @@ from typing import Type
 
 
 class Memory:
-    def __init__(self, capacity:int, *inpDims:tuple, dtype:Type) -> None:
+    def __init__(self, capacity:int, dtype:Type, *inpDims:tuple) -> None:
         self.index    = 0
         self.capacity = capacity
-        self.memory   = np.zeros([capacity, *inpDims], dtype=np.float32)
+        self.memory   = np.zeros([capacity, *inpDims], dtype)
     
     def __len__(self) -> int: #TODO: delete if unused
         return len(self.memory)
