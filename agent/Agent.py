@@ -93,21 +93,20 @@ class Agent:
     
     def learn(self):
         if self.stateMem.index >= self.batchSize:
-            #FIXME: sample() method rng seeds not synced
-            #pass Generator instance as input to sample()
-            #https://numpy.org/doc/stable/reference/random/generator.html#
-            stateBatch     = self.stateMem.sample(self.batchSize)
-            nextStateBatch = self.nextStateMem.sample(self.batchSize)
-            actionBatch    = self.actionMem.sample(self.batchSize)
-            rewardBatch    = self.rewardMem.sample(self.batchSize)
-            doneBatch      = self.doneMem.sample(self.batchSize)
+            seed = np.random.randint(0,999)
+            
+            stateBatch    = self.stateMem.sample(self.batchSize, seed)
+            nextStateBatch= self.nextStateMem.sample(self.batchSize,seed)
+            actionBatch   = self.actionMem.sample(self.batchSize, seed)
+            rewardBatch   = self.rewardMem.sample(self.batchSize, seed)
+            doneBatch     = self.doneMem.sample(self.batchSize, seed)
             
             T.Tensor(stateBatch).to(self._device)
             T.Tensor(nextStateBatch).to(self._device)
             T.Tensor(rewardBatch).to(self._device)            
             T.Tensor(doneBatch).to(self._device)
 
-            #TODO: call to policy and target networks
+            #FIXME? test if .gather(1,actionBatch) is necessary
             action_ = self.policyNet.forward(stateBatch)
             values_ = self.targetNet.forward(nextStateBatch)
             values_[doneBatch] = 0.0
