@@ -72,6 +72,7 @@ class Agent:
                                      lr = self.lr, amsgrad=True)
 
     def act(self, observation:np.ndarray) -> T.Tensor:
+        #FIXME: action should be 1x2 w. argmax to choose best of actions
         self.epsilon = self.epsEnd + (self.epsStart - self.epsEnd)*\
             math.exp(-1. * self._steps / self.epsDecay)
         self._steps += 1
@@ -107,6 +108,7 @@ class Agent:
             T.Tensor(doneBatch).to(self._device)
 
             #FIXME? test if .gather(1,actionBatch) is necessary
+            #FIXME: 
             action_ = self.policyNet.forward(stateBatch)
             values_ = self.targetNet.forward(nextStateBatch)
             values_[doneBatch] = 0.0
