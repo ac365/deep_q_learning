@@ -92,7 +92,7 @@ class Agent:
         self.doneMem.push(done)
     
     def learn(self):
-        if self.stateMem.index >= self.batchSize:
+        if self.stateMem.counter >= self.batchSize:
             seed = np.random.randint(0,999)
             
             stateBatch    = self.stateMem.sample(self.batchSize, seed)

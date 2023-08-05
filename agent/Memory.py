@@ -5,7 +5,7 @@ from typing import Type
 
 class Memory:
     def __init__(self, capacity:int, dtype:Type, *inpDims:tuple) -> None:
-        self.index    = 0
+        self.counter  = 0
         self.capacity = capacity
         self.memory   = np.zeros([capacity, *inpDims], dtype)
     
@@ -13,9 +13,9 @@ class Memory:
         return len(self.memory)
     
     def push(self, data) -> None: #TODO: can I not specify datatype?
-        self.index              = self.index % self.capacity
-        self.memory[self.index] = data
-        self.index             += 1
+        index              = self.counter % self.capacity
+        self.memory[index] = data
+        self.counter      += 1
    
     def sample(self, batch_size:int, seed:int) -> np.ndarray:
         rng = np.random.default_rng(seed)
