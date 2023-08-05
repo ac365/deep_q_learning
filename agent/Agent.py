@@ -21,21 +21,20 @@ class Agent:
         #kwargs
         if "MEM_CAPACITY" in hyperparams.keys():
             self.stateMem     = mem(hyperparams["MEM_CAPACITY"],
-                                    dtype=np.float32, *obsDims)
+                                    np.float32, *obsDims)
             self.nextStateMem = mem(hyperparams["MEM_CAPACITY"],
-                                    dtype=np.float32, *obsDims)
+                                    np.float32, *obsDims)
             self.actionMem    = mem(hyperparams["MEM_CAPACITY"],
-                                    dtype=np.int32, *actDims)
+                                    np.int32, *actDims)
             self.rewardMem    = mem(hyperparams["MEM_CAPACITY"],
-                                    dtype=np.float32)
-            self.doneMem      = mem(hyperparams["MEM_CAPACITY"],
-                                    dtype=np.bool_)
+                                    np.float32)
+            self.doneMem      = mem(hyperparams["MEM_CAPACITY"],np.bool_)
         else:
-            self.stateMem     = mem(100000, dtype=np.float32, *obsDims)
-            self.nextStateMem = mem(100000, dtype=np.float32, *obsDims)
-            self.actionMem    = mem(100000, dtype=np.int32, *actDims) 
-            self.rewardMem    = mem(100000, dtype=np.float32) 
-            self.doneMem      = mem(100000, dtype=np.bool_)
+            self.stateMem     = mem(100000, np.float32, *obsDims)
+            self.nextStateMem = mem(100000, np.float32, *obsDims)
+            self.actionMem    = mem(100000, np.int32,   *actDims) 
+            self.rewardMem    = mem(100000, np.float32) 
+            self.doneMem      = mem(100000, np.bool_)
         if "LR" in hyperparams.keys():
             self.lr = hyperparams["LR"]
         else:
@@ -78,7 +77,7 @@ class Agent:
         self._steps += 1
 
         if random.random() > self.epsilon:
-            state  = T.tensor([observation]).to(self.device)
+            state  = T.tensor([observation]).to(self._device)
             action = self.policyNet.forward(state)
         else:
             action = T.tensor(self._env.action_space.sample())
@@ -108,7 +107,6 @@ class Agent:
             T.Tensor(doneBatch).to(self._device)
 
             #FIXME? test if .gather(1,actionBatch) is necessary
-            #FIXME: 
             action_ = self.policyNet.forward(stateBatch)
             values_ = self.targetNet.forward(nextStateBatch)
             values_[doneBatch] = 0.0
