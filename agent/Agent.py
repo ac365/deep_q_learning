@@ -11,12 +11,13 @@ import torch.optim as optim
 
 class Agent:
     def __init__(self, env:gym.Env, obsDims:list, actDims:list,
-                  **hyperparams:dict):
+                  actSpace:np.ndarray, **hyperparams:dict):
         #member variables
         self._env    = env
         self._steps  = 0
         self._device = T.device("mps" if T.backends.mps.is_available()
                                    else "cpu")
+        self.actSpace = actSpace
 
         #kwargs
         if "MEM_CAPACITY" in hyperparams.keys():
@@ -65,22 +66,23 @@ class Agent:
             self.batchSize = 128
 
         #networks
-        self.policyNet = dqn(obsDims,actDims).to(self._device)
-        self.targetNet = dqn(obsDims,actDims).to(self._device)
+        self.policyNet = dqn(obsDims, actSpace.size).to(self._device)
+        self.targetNet = dqn(obsDims, actSpace.size).to(self._device)
         self.optimizer = optim.AdamW(self.policyNet.parameters(),
                                      lr = self.lr, amsgrad=True)
 
-    def act(self, observation:np.ndarray) -> T.Tensor:
+    def act(self, observation:np.ndarray) -> np.array:
         #FIXME: action should be 1x2 w. argmax to choose best of actions
         self.epsilon = self.epsEnd + (self.epsStart - self.epsEnd)*\
             math.exp(-1. * self._steps / self.epsDecay)
         self._steps += 1
 
         if random.random() > self.epsilon:
-            state  = T.tensor([observation]).to(self._device)
-            action = self.policyNet.forward(state)
+            state  = T.tensor(observation).to(self._device)
+            actInd = T.argmax(self.policyNet.forward(state))
+            action = np.int32(self.actSpace[actInd])
         else:
-            action = T.tensor(self._env.action_space.sample())
+            action = np.int32(self._env.action_space.sample())
         return action
     
     def memorize(self, state:np.ndarray, action:np.ndarray, 
