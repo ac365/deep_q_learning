@@ -1,4 +1,3 @@
-import random
 import numpy as np
 from typing import Type
 
@@ -19,7 +18,7 @@ class Memory:
    
     def sample(self, batch_size:int, seed:int) -> np.ndarray:
         rng = np.random.default_rng(seed)
-        indices = rng.choice(np.arange(self.index), batch_size,
-                             replace=False)
+        maxMem = min(self.counter, len(self.memory))
+        indices = rng.choice(maxMem, batch_size, replace=False)
         return self.memory[indices]
     
