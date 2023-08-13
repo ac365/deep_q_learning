@@ -16,9 +16,9 @@ class Memory:
         self.memory[index] = data
         self.counter      += 1
    
-    def sample(self, batch_size:int, seed:int) -> np.ndarray:
+    def sample(self, batchSize:int, seed:int) -> np.ndarray:
         rng = np.random.default_rng(seed)
-        maxMem = min(self.counter, len(self.memory))
-        indices = rng.choice(maxMem, batch_size, replace=False)
+        memSize = min(self.counter, len(self.memory))
+        indices = rng.choice(memSize, batchSize, replace=False)
         return self.memory[indices]
     
