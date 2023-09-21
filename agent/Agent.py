@@ -1,6 +1,5 @@
 from networks.DQN import DQN as dqn
 from agent.Memory import Memory as mem
-import gymnasium as gym #FIXME? is this really the best way to do this?
 
 import math
 import random
@@ -10,10 +9,9 @@ import torch.nn as nn
 import torch.optim as optim
 
 class Agent:
-    def __init__(self, env:gym.Env, obsDims:list, actDims:list,
-                  actSpace:np.ndarray, **hyperparams:dict):
+    def __init__(self, obsDims:list, actDims:list, actSpace:np.ndarray, 
+                 **hyperparams:dict):
         #member variables
-        self._env    = env
         self._steps  = 0
         self._device = T.device("mps" if T.backends.mps.is_available()
                                    else "cpu")
@@ -26,14 +24,14 @@ class Agent:
             self.nextStateMem = mem(hyperparams["MEM_CAPACITY"],
                                     np.float32, *obsDims)
             self.actionMem    = mem(hyperparams["MEM_CAPACITY"],
-                                    np.int32, *actDims)
+                                    np.int64, *actDims)
             self.rewardMem    = mem(hyperparams["MEM_CAPACITY"],
                                     np.float32)
             self.doneMem      = mem(hyperparams["MEM_CAPACITY"],np.bool_)
         else:
             self.stateMem     = mem(100000, np.float32, *obsDims)
             self.nextStateMem = mem(100000, np.float32, *obsDims)
-            self.actionMem    = mem(100000, np.int32,   *actDims) 
+            self.actionMem    = mem(100000, np.int64,   *actDims) 
             self.rewardMem    = mem(100000, np.float32) 
             self.doneMem      = mem(100000, np.bool_)
         if "LR" in hyperparams.keys():
@@ -71,47 +69,54 @@ class Agent:
         self.optimizer = optim.AdamW(self.policyNet.parameters(),
                                      lr = self.lr, amsgrad=True)
 
-    def act(self, observation:np.ndarray) -> np.int32:
+    def act(self, observation:np.ndarray) -> np.int64:
         self.epsilon = self.epsEnd + (self.epsStart - self.epsEnd)*\
             math.exp(-1. * self._steps / self.epsDecay)
         self._steps += 1
 
         if random.random() > self.epsilon:
             state  = T.tensor(observation).to(self._device)
-            actInd = T.argmax(self.policyNet.forward(state))
-            action = np.int32(self.actSpace[actInd])
+            action = self.policyNet.forward(state).argmax().item()
+            action = np.int64(action)
         else:
-            action = np.int32(self._env.action_space.sample())
+            action = np.random.choice(self.actSpace.size)
+            action = np.int64(action)
         return action
     
     def memorize(self, state:np.ndarray, action:np.ndarray, 
-                 reward:np.float32, nextState:np.ndarray, done:np.bool_):
+                 nextState:np.ndarray, reward:np.float32, 
+                 done:np.bool_) -> None:
         self.stateMem.push(state)
         self.nextStateMem.push(nextState)
         self.actionMem.push(action)
         self.rewardMem.push(reward)
         self.doneMem.push(done)
     
-    def learn(self):
-        if self.stateMem.counter >= self.batchSize:
-            seed = np.random.randint(0,999)
-            
-            stateBatch    = self.stateMem.sample(self.batchSize, seed)
-            nextStateBatch= self.nextStateMem.sample(self.batchSize,seed)
-            actionBatch   = self.actionMem.sample(self.batchSize, seed)
-            rewardBatch   = self.rewardMem.sample(self.batchSize, seed)
-            doneBatch     = self.doneMem.sample(self.batchSize, seed)
-            
-            T.Tensor(stateBatch).to(self._device)
-            T.Tensor(nextStateBatch).to(self._device)
-            T.Tensor(rewardBatch).to(self._device)            
-            T.Tensor(doneBatch).to(self._device)
+    def learn(self) -> None:
+        if self.stateMem.counter <= self.batchSize:
+            return
+        
+        self.optimizer.zero_grad()
 
-            #FIXME? test if .gather(1,actionBatch) is necessary
-            action_ = self.policyNet.forward(stateBatch)
-            values_ = self.targetNet.forward(nextStateBatch)
-            values_[doneBatch] = 0.0
-            reward_ = values_.max(1)[0] * self.gamma + rewardBatch
+        seed           = np.random.randint(0,9999)
+        actBatch       = self.actionMem.sample(self.batchSize, seed)
+        stateBatch     = self.stateMem.sample(self.batchSize, seed)
+        nextStateBatch = self.nextStateMem.sample(self.batchSize,seed)
+        rewardBatch    = self.rewardMem.sample(self.batchSize, seed)
+        doneBatch      = self.doneMem.sample(self.batchSize, seed)
 
-            criterion = nn.SmoothL1Loss()
-            loss = criterion(action_, reward_)
+        actBatch       = T.Tensor(actBatch).long().to(self._device)
+        stateBatch     = T.Tensor(stateBatch).to(self._device)
+        nextStateBatch = T.Tensor(nextStateBatch).to(self._device)
+        rewardBatch    = T.Tensor(rewardBatch).to(self._device)
+        doneBatch      = T.Tensor(doneBatch).long().to(self._device)
+
+        value = self.policyNet.forward(stateBatch).gather(1,actBatch)
+        nextValue = self.targetNet.forward(nextStateBatch).argmax(1)
+        nextValue[doneBatch] = 0.0
+        reward_ = nextValue*self.gamma + rewardBatch
+
+        criterion = nn.SmoothL1Loss()
+        loss = criterion(value, reward_)#.to(self.device)
+        loss.backward()
+        self.optimizer.step()
