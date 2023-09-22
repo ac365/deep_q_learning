@@ -117,6 +117,6 @@ class Agent:
         reward_ = nextValue*self.gamma + rewardBatch
 
         criterion = nn.SmoothL1Loss()
-        loss = criterion(value, reward_)#.to(self.device)
+        loss = criterion(value.squeeze(), reward_)#.to(self.device)
         loss.backward()
         self.optimizer.step()
