@@ -66,6 +66,7 @@ class Agent:
         #networks
         self.policyNet = dqn(obsDims, actSpace.size).to(self._device)
         self.targetNet = dqn(obsDims, actSpace.size).to(self._device)
+        self.targetNet.load_state_dict(self.policyNet.state_dict())
         self.optimizer = optim.AdamW(self.policyNet.parameters(),
                                      lr = self.lr, amsgrad=True)
 
@@ -98,7 +99,7 @@ class Agent:
         
         self.optimizer.zero_grad()
 
-        seed           = np.random.randint(0,9999)
+        seed           = np.random.randint(0,9999999)
         actBatch       = self.actionMem.sample(self.batchSize, seed)
         stateBatch     = self.stateMem.sample(self.batchSize, seed)
         nextStateBatch = self.nextStateMem.sample(self.batchSize,seed)
@@ -112,13 +113,15 @@ class Agent:
         doneBatch      = T.Tensor(doneBatch).long().to(self._device)
 
         value = self.policyNet.forward(stateBatch).gather(1,actBatch)
-        nextValue = self.targetNet.forward(nextStateBatch).argmax(1)
+        with T.no_grad():
+            nextValue = self.targetNet.forward(nextStateBatch).argmax(1)
         nextValue[doneBatch] = 0.0
         reward_ = nextValue*self.gamma + rewardBatch
 
         criterion = nn.SmoothL1Loss()
         loss = criterion(value.squeeze(), reward_)#.to(self.device)
         loss.backward()
+        nn.utils.clip_grad_value_(self.policyNet.parameters(),100)
         self.optimizer.step()
 
         policyNetDict = self.policyNet.state_dict()
