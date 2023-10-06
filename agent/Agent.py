@@ -115,9 +115,15 @@ class Agent:
         nextValue = self.targetNet.forward(nextStateBatch).argmax(1)
         nextValue[doneBatch] = 0.0
         reward_ = nextValue*self.gamma + rewardBatch
-        #TODO: need to update target network rate using TAU
 
         criterion = nn.SmoothL1Loss()
         loss = criterion(value.squeeze(), reward_)#.to(self.device)
         loss.backward()
         self.optimizer.step()
+
+        policyNetDict = self.policyNet.state_dict()
+        targetNetDict = self.targetNet.state_dict()
+        for key in policyNetDict:
+            targetNetDict[key] = policyNetDict[key]*self.tau +\
+                targetNetDict[key]*(1-self.tau)
+        self.targetNet.load_state_dict(targetNetDict)
