@@ -110,7 +110,7 @@ class Agent:
         stateBatch     = T.Tensor(stateBatch).to(self._device)
         nextStateBatch = T.Tensor(nextStateBatch).to(self._device)
         rewardBatch    = T.Tensor(rewardBatch).to(self._device)
-        doneBatch      = T.Tensor(doneBatch).long().to(self._device)
+        doneBatch      = T.Tensor(doneBatch).bool().to(self._device)
 
         value = self.policyNet.forward(stateBatch).gather(1,actBatch)
         with T.no_grad():
