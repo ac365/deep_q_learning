@@ -77,7 +77,8 @@ class Agent:
 
         if random.random() > self.epsilon:
             state  = T.tensor(observation).to(self._device)
-            action = self.policyNet.forward(state).argmax().item()
+            with T.no_grad():
+                action = self.policyNet.forward(state).argmax().item()
             action = np.int64(action)
         else:
             action = np.random.choice(self.actSpace.size)
@@ -114,7 +115,7 @@ class Agent:
 
         value = self.policyNet.forward(stateBatch).gather(1,actBatch)
         with T.no_grad():
-            nextValue = self.targetNet.forward(nextStateBatch).argmax(1)
+            nextValue = self.targetNet.forward(nextStateBatch).max(1)[0]
         nextValue[doneBatch] = 0.0
         reward_ = nextValue*self.gamma + rewardBatch
 
