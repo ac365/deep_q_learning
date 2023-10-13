@@ -21,12 +21,14 @@ for i in range(numGames):
     while not done:
         #act, step, memorize, learn
         action = agent.actSpace[agent.act(state)]
-        nextState, reward, done, truncation, infos = env.step(action)
-        agent.memorize(state,action,nextState,reward,done)        
+        nextState, reward, terminated, truncated, infos = env.step(action)
+        agent.memorize(state,action,nextState,reward,terminated)        
         agent.learn()
         
         state  = nextState
         score += reward
+
+        done = truncated or terminated
     
     scores.append(score)
     epsHist.append(agent.epsilon)
