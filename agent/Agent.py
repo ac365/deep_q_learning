@@ -66,6 +66,7 @@ class Agent:
         #networks
         self.policyNet = dqn(obsDims, actSpace.size).to(self._device)
         self.targetNet = dqn(obsDims, actSpace.size).to(self._device)
+        self.targetNet.load_state_dict(self.policyNet.state_dict())
         self.optimizer = optim.AdamW(self.policyNet.parameters(),
                                      lr = self.lr, amsgrad=True)
 
@@ -76,7 +77,8 @@ class Agent:
 
         if random.random() > self.epsilon:
             state  = T.tensor(observation).to(self._device)
-            action = self.policyNet.forward(state).argmax().item()
+            with T.no_grad():
+                action = self.policyNet.forward(state).argmax().item()
             action = np.int64(action)
         else:
             action = np.random.choice(self.actSpace.size)
@@ -98,7 +100,7 @@ class Agent:
         
         self.optimizer.zero_grad()
 
-        seed           = np.random.randint(0,9999)
+        seed           = np.random.randint(0,9999999)
         actBatch       = self.actionMem.sample(self.batchSize, seed)
         stateBatch     = self.stateMem.sample(self.batchSize, seed)
         nextStateBatch = self.nextStateMem.sample(self.batchSize,seed)
@@ -109,14 +111,23 @@ class Agent:
         stateBatch     = T.Tensor(stateBatch).to(self._device)
         nextStateBatch = T.Tensor(nextStateBatch).to(self._device)
         rewardBatch    = T.Tensor(rewardBatch).to(self._device)
-        doneBatch      = T.Tensor(doneBatch).long().to(self._device)
+        doneBatch      = T.Tensor(doneBatch).bool().to(self._device)
 
         value = self.policyNet.forward(stateBatch).gather(1,actBatch)
-        nextValue = self.targetNet.forward(nextStateBatch).argmax(1)
+        with T.no_grad():
+            nextValue = self.targetNet.forward(nextStateBatch).max(1)[0]
         nextValue[doneBatch] = 0.0
         reward_ = nextValue*self.gamma + rewardBatch
 
         criterion = nn.SmoothL1Loss()
-        loss = criterion(value, reward_)#.to(self.device)
+        loss = criterion(value.squeeze(), reward_)#.to(self.device)
         loss.backward()
+        nn.utils.clip_grad_value_(self.policyNet.parameters(),100)
         self.optimizer.step()
+
+        policyNetDict = self.policyNet.state_dict()
+        targetNetDict = self.targetNet.state_dict()
+        for key in policyNetDict:
+            targetNetDict[key] = policyNetDict[key]*self.tau +\
+                targetNetDict[key]*(1-self.tau)
+        self.targetNet.load_state_dict(targetNetDict)
