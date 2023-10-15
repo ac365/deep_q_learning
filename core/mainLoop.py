@@ -40,3 +40,5 @@ for i in range(numGames):
 fileName = 'invertedPendulumDiscrete.png'
 x = [i+1 for i in range(numGames)]
 plot.plotLearningCurveDeepQ(x,scores,epsHist,fileName)
+
+env.close()
