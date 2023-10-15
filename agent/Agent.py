@@ -1,4 +1,4 @@
-from networks.DQN import DQN as dqn
+from agent.DQN import DQN as dqn
 from agent.Memory import Memory as mem
 
 import math
